@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
+
+# Project data (large; download from Kaggle — see README)
+#data/*.csv
+
+# Local outputs
+outputs/
+models/*.pt
+models/*.pkl
+*.log
