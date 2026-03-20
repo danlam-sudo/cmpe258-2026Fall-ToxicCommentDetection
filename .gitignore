@@ -14,11 +14,10 @@ env/
 # OS / editor
 .DS_Store
 .idea/
-.vscode/*
-!.vscode/settings.json
+.vscode/
 
 # Project data (large; download from Kaggle — see README)
-#data/*.csv
+data/*.csv
 
 # Local outputs
 outputs/

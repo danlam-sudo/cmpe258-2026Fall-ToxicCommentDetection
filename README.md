@@ -76,7 +76,7 @@ The notebook must use the **same Python as `.venv`** (this project targets **3.1
 2. In the notebook toolbar, open the **kernel picker** (top right) and pick that interpreter / **Python 3.12.x ('.venv')**.
 3. If `.venv` was created with an older Python, recreate it: `make clean && make install-venv`, then `source .venv/bin/activate` and `pip install -r requirements.txt`.
 
-This repo includes `.vscode/settings.json` so the workspace default interpreter points at `.venv` when you open the folder in Cursor.
+Editor settings under `.vscode/` are **not** committed (see `.gitignore`). You can still create `.vscode/settings.json` locally with `"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"` if you want Cursor/VS Code to default to the project venv.
 
 ## Collaboration (lightweight)
 
