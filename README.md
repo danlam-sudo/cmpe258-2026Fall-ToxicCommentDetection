@@ -66,7 +66,7 @@ jupyter lab
 jupyter notebook
 ```
 
-Open `EDA.ipynb` (or add your own notebooks in the repo root or a `notebooks/` folder).
+Open `eda/EDA.ipynb` for exploratory analysis. **Starter model notebooks** (CNN, BiLSTM, BERT, DistilBERT) live in `notebooks/` with shared metrics in `notebooks/metrics_helpers.py`. Shared preprocessing lives under `preprocessing/` (see `preprocessing/README.md`).
 
 ### Cursor / VS Code: Run All
 
