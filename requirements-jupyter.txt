@@ -1,0 +1,4 @@
+# Optional: install if you want `jupyter lab` / `jupyter notebook` from the CLI.
+# On Windows, this can fail with "No such file or directory" under deep paths — see README (Windows long paths).
+-r requirements.txt
+jupyter==1.1.1
