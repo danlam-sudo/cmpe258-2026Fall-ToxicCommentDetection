@@ -1,6 +1,6 @@
 # Jigsaw Toxic Comment Classification (CMPE258)
 
-Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification).
+Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge).
 
 ## Prerequisites
 
