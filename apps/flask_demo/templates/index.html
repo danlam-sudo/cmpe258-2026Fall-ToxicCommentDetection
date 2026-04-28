@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DistilBERT Toxicity Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="container">
+    <h1>DistilBERT Toxicity Demo</h1>
+    <p class="subtle">Bundle: <code>{{ bundle_dir }}</code></p>
+
+    <form method="post" action="/predict">
+      <label for="text">Input text</label>
+      <textarea id="text" name="text" rows="6" placeholder="Type or paste text here...">{{ text }}</textarea>
+      <button type="submit">Predict 6 labels</button>
+    </form>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if predictions %}
+      <section class="results">
+        <h2>Predictions</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Probability</th>
+              <th>Threshold</th>
+              <th>Guess</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in predictions %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.probability }}</td>
+                <td>{{ row.threshold }}</td>
+                <td class="{{ 'pos' if row.prediction == 1 else 'neg' }}">{{ row.prediction }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>
