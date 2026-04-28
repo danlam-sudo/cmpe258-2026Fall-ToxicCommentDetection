@@ -1,6 +1,6 @@
 # Jigsaw Toxic Comment Classification (CMPE258)
 
-Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification).
+Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge).
 
 ## Prerequisites
 
@@ -10,10 +10,10 @@ Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Cha
 
 ## Repository setup
 
-1. Clone the team repo (replace with your GitHub URL):
+1. Clone the team repo:
 
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/danlam-sudo/cmpe258-2026Fall-ToxicCommentDetection.git
    cd jigsaw-toxic-comment-classification-challenge
    ```
 
