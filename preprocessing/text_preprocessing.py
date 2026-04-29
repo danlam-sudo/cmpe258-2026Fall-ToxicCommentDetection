@@ -25,7 +25,7 @@ import unicodedata
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 import numpy as np
 import pandas as pd
@@ -129,9 +129,31 @@ def _train_validation_split(
     *,
     validation_fraction: float,
     random_state: int,
+    use_iterative_stratify: bool,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not 0 < validation_fraction < 1:
         raise ValueError("validation_fraction must be between 0 and 1 (exclusive).")
+    if use_iterative_stratify:
+        try:
+            from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
+        except ImportError as e:
+            raise ImportError(
+                "Iterative stratification requires `iterative-stratification`. "
+                "Install with: pip install iterative-stratification"
+            ) from e
+
+        y = df[list(LABEL_COLUMNS)].values
+        idx = np.arange(len(df))
+        splitter = MultilabelStratifiedShuffleSplit(
+            n_splits=1,
+            test_size=validation_fraction,
+            random_state=random_state,
+        )
+        train_idx, val_idx = next(splitter.split(idx, y))
+        train_df = df.iloc[train_idx].copy()
+        val_df = df.iloc[val_idx].copy()
+        return train_df, val_df
+
     y_strat = df[list(LABEL_COLUMNS)].sum(axis=1).astype(int)
     return train_test_split(
         df,
@@ -150,6 +172,101 @@ def _with_normalized_comment_text(df: pd.DataFrame) -> pd.DataFrame:
 
 def _labels_array(df: pd.DataFrame) -> np.ndarray:
     return df[list(LABEL_COLUMNS)].values.astype(np.float32)
+
+
+def _dataset_balance_stats(df: pd.DataFrame) -> dict[str, int]:
+    y = df[list(LABEL_COLUMNS)].values
+    out: dict[str, int] = {
+        "n_rows": int(len(df)),
+        "n_clean": int((y.sum(axis=1) == 0).sum()),
+    }
+    for i, label in enumerate(LABEL_COLUMNS):
+        out[f"pos_{label}"] = int(y[:, i].sum())
+    return out
+
+
+def _print_balance_stats(title: str, stats: dict[str, int]) -> None:
+    pieces = [
+        f"rows={stats['n_rows']}",
+        f"clean={stats['n_clean']}",
+    ]
+    pieces.extend(f"{label}={stats[f'pos_{label}']}" for label in LABEL_COLUMNS)
+    print(f"[preprocess] {title}: " + ", ".join(pieces))
+
+
+def _rebalance_train_dataframe(
+    train_df: pd.DataFrame,
+    *,
+    clean_to_toxic_ratio: float,
+    rare_labels: Sequence[str],
+    rare_oversample_factor: float,
+    max_copies_per_row: int,
+    rebalance_random_state: int,
+) -> pd.DataFrame:
+    if clean_to_toxic_ratio < 0:
+        raise ValueError("clean_to_toxic_ratio must be >= 0.")
+    if rare_oversample_factor < 0:
+        raise ValueError("rare_oversample_factor must be >= 0.")
+    if max_copies_per_row < 1:
+        raise ValueError("max_copies_per_row must be >= 1.")
+    invalid_labels = [c for c in rare_labels if c not in LABEL_COLUMNS]
+    if invalid_labels:
+        raise ValueError(f"Invalid rare_labels: {invalid_labels}")
+
+    rng = np.random.default_rng(rebalance_random_state)
+    work = train_df.reset_index(drop=True).copy()
+    y = work[list(LABEL_COLUMNS)].values
+    label_sum = y.sum(axis=1)
+    clean_idx = np.flatnonzero(label_sum == 0)
+    toxic_idx = np.flatnonzero(label_sum > 0)
+
+    if len(toxic_idx) == 0:
+        return work
+
+    target_clean = int(round(clean_to_toxic_ratio * len(toxic_idx)))
+    if len(clean_idx) > target_clean:
+        keep_clean = rng.choice(clean_idx, size=target_clean, replace=False)
+    else:
+        keep_clean = clean_idx
+    keep_idx = np.concatenate([toxic_idx, keep_clean])
+    keep_idx.sort()
+    rebalanced = work.iloc[keep_idx].copy().reset_index(drop=True)
+
+    if rare_oversample_factor <= 0 or len(rare_labels) == 0:
+        return rebalanced
+
+    rare_mask = rebalanced[list(rare_labels)].sum(axis=1).values > 0
+    rare_pos_idx = np.flatnonzero(rare_mask)
+    if len(rare_pos_idx) == 0:
+        return rebalanced
+
+    n_to_add = int(round((rare_oversample_factor - 1.0) * len(rare_pos_idx)))
+    if n_to_add <= 0:
+        return rebalanced
+
+    counts = np.ones(len(rebalanced), dtype=np.int64)
+    added: list[int] = []
+    shuffled_rare = rng.permutation(rare_pos_idx).tolist()
+    cursor = 0
+    while len(added) < n_to_add:
+        if cursor >= len(shuffled_rare):
+            shuffled_rare = rng.permutation(rare_pos_idx).tolist()
+            cursor = 0
+        idx = int(shuffled_rare[cursor])
+        cursor += 1
+        if counts[idx] >= max_copies_per_row:
+            if np.all(counts[rare_pos_idx] >= max_copies_per_row):
+                break
+            continue
+        counts[idx] += 1
+        added.append(idx)
+
+    if added:
+        extra = rebalanced.iloc[added].copy()
+        rebalanced = pd.concat([rebalanced, extra], ignore_index=True)
+        order = rng.permutation(len(rebalanced))
+        rebalanced = rebalanced.iloc[order].reset_index(drop=True)
+    return rebalanced
 
 
 def _fit_word_vocabulary_from_texts(
@@ -217,13 +334,39 @@ def _word_model_pipeline(
     include_lengths: bool,
     max_train_samples: int | None,
     max_val_samples: int | None,
+    use_iterative_stratify: bool,
+    rebalance_train: bool,
+    clean_to_toxic_ratio: float,
+    rare_labels: Sequence[str],
+    rare_oversample_factor: float,
+    max_copies_per_row: int,
+    rebalance_random_state: int,
+    print_diagnostics: bool,
 ) -> CNNPreprocessResult | BiLSTMPreprocessResult:
     df = _load_train_dataframe(csv_path)
     train_df, val_df = _train_validation_split(
-        df, validation_fraction=validation_fraction, random_state=random_state
+        df,
+        validation_fraction=validation_fraction,
+        random_state=random_state,
+        use_iterative_stratify=use_iterative_stratify,
     )
     train_df = _with_normalized_comment_text(train_df)
     val_df = _with_normalized_comment_text(val_df)
+    train_stats_before = _dataset_balance_stats(train_df)
+    val_stats_before = _dataset_balance_stats(val_df)
+    if rebalance_train:
+        train_df = _rebalance_train_dataframe(
+            train_df,
+            clean_to_toxic_ratio=clean_to_toxic_ratio,
+            rare_labels=rare_labels,
+            rare_oversample_factor=rare_oversample_factor,
+            max_copies_per_row=max_copies_per_row,
+            rebalance_random_state=rebalance_random_state,
+        )
+    if print_diagnostics:
+        _print_balance_stats("train_before", train_stats_before)
+        _print_balance_stats("train_after", _dataset_balance_stats(train_df))
+        _print_balance_stats("val_unchanged", val_stats_before)
     if max_train_samples is not None:
         train_df = train_df.iloc[:max_train_samples].reset_index(drop=True)
     if max_val_samples is not None:
@@ -272,6 +415,14 @@ def _transformer_pipeline(
     return_tensors: str | None,
     max_train_samples: int | None,
     max_val_samples: int | None,
+    use_iterative_stratify: bool,
+    rebalance_train: bool,
+    clean_to_toxic_ratio: float,
+    rare_labels: Sequence[str],
+    rare_oversample_factor: float,
+    max_copies_per_row: int,
+    rebalance_random_state: int,
+    print_diagnostics: bool,
 ) -> TransformerPreprocessResult:
     try:
         from transformers import AutoTokenizer
@@ -283,10 +434,28 @@ def _transformer_pipeline(
 
     df = _load_train_dataframe(csv_path)
     train_df, val_df = _train_validation_split(
-        df, validation_fraction=validation_fraction, random_state=random_state
+        df,
+        validation_fraction=validation_fraction,
+        random_state=random_state,
+        use_iterative_stratify=use_iterative_stratify,
     )
     train_df = _with_normalized_comment_text(train_df)
     val_df = _with_normalized_comment_text(val_df)
+    train_stats_before = _dataset_balance_stats(train_df)
+    val_stats_before = _dataset_balance_stats(val_df)
+    if rebalance_train:
+        train_df = _rebalance_train_dataframe(
+            train_df,
+            clean_to_toxic_ratio=clean_to_toxic_ratio,
+            rare_labels=rare_labels,
+            rare_oversample_factor=rare_oversample_factor,
+            max_copies_per_row=max_copies_per_row,
+            rebalance_random_state=rebalance_random_state,
+        )
+    if print_diagnostics:
+        _print_balance_stats("train_before", train_stats_before)
+        _print_balance_stats("train_after", _dataset_balance_stats(train_df))
+        _print_balance_stats("val_unchanged", val_stats_before)
     if max_train_samples is not None:
         train_df = train_df.iloc[:max_train_samples].reset_index(drop=True)
     if max_val_samples is not None:
@@ -335,6 +504,14 @@ def preprocess_for_cnn(
     max_vocab: int | None = 50_000,
     max_train_samples: int | None = None,
     max_val_samples: int | None = None,
+    use_iterative_stratify: bool = False,
+    rebalance_train: bool = False,
+    clean_to_toxic_ratio: float = 3.0,
+    rare_labels: Sequence[str] = ("severe_toxic", "threat", "identity_hate"),
+    rare_oversample_factor: float = 1.0,
+    max_copies_per_row: int = 3,
+    rebalance_random_state: int = 42,
+    print_diagnostics: bool = False,
 ) -> CNNPreprocessResult:
     """
     Load ``train.csv``, stratified train/val split, normalize text, fit word
@@ -354,6 +531,14 @@ def preprocess_for_cnn(
         include_lengths=False,
         max_train_samples=max_train_samples,
         max_val_samples=max_val_samples,
+        use_iterative_stratify=use_iterative_stratify,
+        rebalance_train=rebalance_train,
+        clean_to_toxic_ratio=clean_to_toxic_ratio,
+        rare_labels=rare_labels,
+        rare_oversample_factor=rare_oversample_factor,
+        max_copies_per_row=max_copies_per_row,
+        rebalance_random_state=rebalance_random_state,
+        print_diagnostics=print_diagnostics,
     )
     assert isinstance(out, CNNPreprocessResult)
     return out
@@ -369,6 +554,14 @@ def preprocess_for_bilstm(
     max_vocab: int | None = 50_000,
     max_train_samples: int | None = None,
     max_val_samples: int | None = None,
+    use_iterative_stratify: bool = False,
+    rebalance_train: bool = False,
+    clean_to_toxic_ratio: float = 3.0,
+    rare_labels: Sequence[str] = ("severe_toxic", "threat", "identity_hate"),
+    rare_oversample_factor: float = 1.0,
+    max_copies_per_row: int = 3,
+    rebalance_random_state: int = 42,
+    print_diagnostics: bool = False,
 ) -> BiLSTMPreprocessResult:
     """
     Same pipeline as CNN plus ``length_train`` / ``length_val`` for
@@ -384,6 +577,14 @@ def preprocess_for_bilstm(
         include_lengths=True,
         max_train_samples=max_train_samples,
         max_val_samples=max_val_samples,
+        use_iterative_stratify=use_iterative_stratify,
+        rebalance_train=rebalance_train,
+        clean_to_toxic_ratio=clean_to_toxic_ratio,
+        rare_labels=rare_labels,
+        rare_oversample_factor=rare_oversample_factor,
+        max_copies_per_row=max_copies_per_row,
+        rebalance_random_state=rebalance_random_state,
+        print_diagnostics=print_diagnostics,
     )
     assert isinstance(out, BiLSTMPreprocessResult)
     return out
@@ -399,6 +600,14 @@ def preprocess_for_bert(
     return_tensors: str | None = "pt",
     max_train_samples: int | None = None,
     max_val_samples: int | None = None,
+    use_iterative_stratify: bool = False,
+    rebalance_train: bool = False,
+    clean_to_toxic_ratio: float = 3.0,
+    rare_labels: Sequence[str] = ("severe_toxic", "threat", "identity_hate"),
+    rare_oversample_factor: float = 1.0,
+    max_copies_per_row: int = 3,
+    rebalance_random_state: int = 42,
+    print_diagnostics: bool = False,
 ) -> TransformerPreprocessResult:
     """
     Load, split, normalize, then tokenize with a BERT ``AutoTokenizer``.
@@ -416,6 +625,14 @@ def preprocess_for_bert(
         return_tensors=return_tensors,
         max_train_samples=max_train_samples,
         max_val_samples=max_val_samples,
+        use_iterative_stratify=use_iterative_stratify,
+        rebalance_train=rebalance_train,
+        clean_to_toxic_ratio=clean_to_toxic_ratio,
+        rare_labels=rare_labels,
+        rare_oversample_factor=rare_oversample_factor,
+        max_copies_per_row=max_copies_per_row,
+        rebalance_random_state=rebalance_random_state,
+        print_diagnostics=print_diagnostics,
     )
 
 
@@ -429,6 +646,14 @@ def preprocess_for_distilbert(
     return_tensors: str | None = "pt",
     max_train_samples: int | None = None,
     max_val_samples: int | None = None,
+    use_iterative_stratify: bool = False,
+    rebalance_train: bool = False,
+    clean_to_toxic_ratio: float = 3.0,
+    rare_labels: Sequence[str] = ("severe_toxic", "threat", "identity_hate"),
+    rare_oversample_factor: float = 1.0,
+    max_copies_per_row: int = 3,
+    rebalance_random_state: int = 42,
+    print_diagnostics: bool = False,
 ) -> TransformerPreprocessResult:
     """
     Same as ``preprocess_for_bert`` but defaults to DistilBERT weights.
@@ -442,4 +667,12 @@ def preprocess_for_distilbert(
         return_tensors=return_tensors,
         max_train_samples=max_train_samples,
         max_val_samples=max_val_samples,
+        use_iterative_stratify=use_iterative_stratify,
+        rebalance_train=rebalance_train,
+        clean_to_toxic_ratio=clean_to_toxic_ratio,
+        rare_labels=rare_labels,
+        rare_oversample_factor=rare_oversample_factor,
+        max_copies_per_row=max_copies_per_row,
+        rebalance_random_state=rebalance_random_state,
+        print_diagnostics=print_diagnostics,
     )

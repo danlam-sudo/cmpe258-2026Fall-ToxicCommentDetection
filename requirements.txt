@@ -10,3 +10,4 @@ tqdm==4.67.1
 # Model notebooks (01–04 under notebooks/)
 torch>=2.2.0
 transformers>=4.40.0
+flask>=3.0.0

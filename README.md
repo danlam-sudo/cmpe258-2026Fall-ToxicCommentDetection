@@ -1,6 +1,6 @@
 # Jigsaw Toxic Comment Classification (CMPE258)
 
-Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification).
+Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge).
 
 ## Prerequisites
 
@@ -10,10 +10,10 @@ Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Cha
 
 ## Repository setup
 
-1. Clone the team repo (replace with your GitHub URL):
+1. Clone the team repo:
 
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/danlam-sudo/cmpe258-2026Fall-ToxicCommentDetection.git
    cd jigsaw-toxic-comment-classification-challenge
    ```
 
@@ -65,6 +65,9 @@ Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Cha
 | `make install` | Upgrade pip and install `requirements.txt` (uses `python3.12` by default — activate your venv first). |
 | `make venv`    | Create `.venv` with `python3.12`.                |
 | `make install-venv` | Create `.venv` and install dependencies (Unix/macOS). |
+| `make demo-web-install` | Install Flask demo deps into active Python. |
+| `make demo-web` | Run DistilBERT Flask UI on `http://127.0.0.1:8000`. |
+| `make demo-web-dev` | Run Flask UI with debug mode enabled.      |
 | `make PYTHON=python3 …` | Override interpreter if needed.           |
 | `make clean`   | Delete `.venv`.                                  |
 
@@ -78,7 +81,34 @@ jupyter lab
 jupyter notebook
 ```
 
-Open `eda/EDA.ipynb` for exploratory analysis. **Starter model notebooks** (CNN, BiLSTM, BERT, DistilBERT) live in `notebooks/` with shared metrics in `notebooks/metrics_helpers.py`. Shared preprocessing lives under `preprocessing/` (see `preprocessing/README.md`). For `jupyter lab` / `jupyter notebook` from the terminal, install **`requirements-jupyter.txt`** (after resolving Windows long paths if needed).
+Open `eda/EDA.ipynb` for exploratory analysis. **Starter model notebooks** (CNN, BiLSTM, BERT) live in `notebooks/`; DistilBERT notebooks are in `notebooks/distilbert/`. Shared metrics are in `notebooks/metrics_helpers.py`. Shared preprocessing lives under `preprocessing/` (see `preprocessing/README.md`).
+
+## DistilBERT web demo
+
+With `.venv` activated:
+
+```bash
+make install
+make demo-web
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+By default, the demo loads this bundle:
+
+- `notebooks/distilbert/distilbert_exp07_demo_bundle`
+
+To override the model bundle path:
+
+```bash
+BUNDLE_DIR=/absolute/path/to/distilbert_exp07_demo_bundle make demo-web
+```
+
+To run on another port:
+
+```bash
+PORT=5050 make demo-web
+```
 
 ### Cursor / VS Code: Run All
 
