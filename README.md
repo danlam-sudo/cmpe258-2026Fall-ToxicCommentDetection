@@ -58,6 +58,22 @@ Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Cha
 
    CSVs are **not** committed (they are large). Everyone keeps their own copy locally.
 
+### Optional GloVe embeddings for CNN
+
+The CNN notebook can optionally initialize its embedding layer from **GloVe 6B 100d** when `USE_GLOVE = True`.
+
+1. Download `glove.6B.zip` from the Stanford NLP GloVe page: [https://nlp.stanford.edu/projects/glove/](https://nlp.stanford.edu/projects/glove/)
+2. Unzip it.
+3. Place this file in the project data folder:
+
+   ```text
+   data/glove.6B.100d.txt
+   ```
+
+The file should keep this exact name unless you also update `GLOVE_PATH` in `notebooks/01_cnn_glove.ipynb`.
+
+`data/glove.6B.100d.txt` is ignored by git because it is large. Each teammate should download and place it locally if they want to run the GloVe CNN experiment.
+
 ## Makefile targets
 
 | Target         | Description                                      |
