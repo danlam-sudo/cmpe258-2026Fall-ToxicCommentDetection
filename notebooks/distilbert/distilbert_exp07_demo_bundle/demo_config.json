@@ -1,0 +1,21 @@
+{
+  "train_size": 130000,
+  "max_length": 192,
+  "batch_size": 24,
+  "max_epochs": 6,
+  "lr": 1.5e-05,
+  "weight_decay": 0.02,
+  "warmup_ratio": 0.15,
+  "early_stop_patience": 3,
+  "early_stop_min_delta": 0.001,
+  "grad_clip": 1.0,
+  "grad_accum": 2,
+  "use_bf16_amp": true,
+  "num_workers": 2,
+  "best_epoch": 2,
+  "best_val_loss": 0.18824321110977937,
+  "train_time_s": 1525.0448555900002,
+  "inference_time_s": 46.492551698000625,
+  "f1_micro_tuned": 0.7752823920265781,
+  "f1_macro_tuned": 0.682352322900639
+}
