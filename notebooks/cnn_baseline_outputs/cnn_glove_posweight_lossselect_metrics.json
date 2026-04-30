@@ -26,12 +26,12 @@
   },
   "run_mode": "full",
   "device": "cpu",
-  "training_time_s": 2668.970140599995,
-  "inference_time_s": 16.424456699984148,
+  "training_time_s": 1710.5711085000075,
+  "inference_time_s": 10.41358880000189,
   "best_epoch": 2,
   "epochs": 20,
   "epochs_ran": 4,
-  "best_epoch_val_inference_time_s": 23.188896199979354,
+  "best_epoch_val_inference_time_s": 14.933857399970293,
   "config": {
     "max_len": 256,
     "batch_size": 64,
@@ -107,7 +107,7 @@
       "val_loss": 0.41349404445290566,
       "micro_f1": 0.4450063211125158,
       "macro_f1": 0.3696910517892778,
-      "inference_time_s": 15.225389900035225,
+      "inference_time_s": 16.422895399970002,
       "per_label_f1": {
         "toxic": 0.6485195797516714,
         "severe_toxic": 0.22934472934472935,
@@ -124,7 +124,7 @@
       "val_loss": 0.40353157338500023,
       "micro_f1": 0.49667931688804556,
       "macro_f1": 0.40430291377761085,
-      "inference_time_s": 23.188896199979354,
+      "inference_time_s": 14.933857399970293,
       "per_label_f1": {
         "toxic": 0.6531106269668361,
         "severe_toxic": 0.27419354838709675,
@@ -141,7 +141,7 @@
       "val_loss": 0.45976283806562424,
       "micro_f1": 0.5625876413947836,
       "macro_f1": 0.4490453313983245,
-      "inference_time_s": 27.084283000032883,
+      "inference_time_s": 12.479961799981538,
       "per_label_f1": {
         "toxic": 0.7000812787862368,
         "severe_toxic": 0.33676975945017185,
@@ -158,7 +158,7 @@
       "val_loss": 0.5357223675996066,
       "micro_f1": 0.5662134475693797,
       "macro_f1": 0.4494482285822965,
-      "inference_time_s": 19.408430400013458,
+      "inference_time_s": 12.203449600026943,
       "per_label_f1": {
         "toxic": 0.6769309725429817,
         "severe_toxic": 0.33926453143534996,
@@ -170,7 +170,7 @@
       "is_best_epoch": false
     }
   ],
-  "threshold_tuning_time_s": 1.9470124000217766,
+  "threshold_tuning_time_s": 2.2918130999896675,
   "threshold_tuned_eval": {
     "best_threshold_per_label": {
       "toxic": 0.87,
@@ -182,7 +182,7 @@
     },
     "f1_micro": 0.6967933973751861,
     "f1_macro": 0.5625085288190464,
-    "threshold_tuning_time_s": 1.9470124000217766,
+    "threshold_tuning_time_s": 2.2918130999896675,
     "per_label": [
       {
         "label": "toxic",
