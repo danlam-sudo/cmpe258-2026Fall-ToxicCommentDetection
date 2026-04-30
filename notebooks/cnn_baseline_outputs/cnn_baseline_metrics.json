@@ -1,0 +1,85 @@
+{
+  "model": "TextCNN",
+  "loss": "BCEWithLogitsLoss",
+  "use_pos_weight": false,
+  "pos_weight_per_label": {
+    "toxic": 9.442303497418745,
+    "severe_toxic": 99.28840782122904,
+    "obscene": 17.849324058275364,
+    "threat": 336.9129411764706,
+    "insult": 19.244290950098677,
+    "identity_hate": 112.70783847980998
+  },
+  "run_mode": "full",
+  "device": "cpu",
+  "training_time_s": 2800.3898523002863,
+  "epochs": 7,
+  "config": {
+    "max_len": 256,
+    "batch_size": 64,
+    "lr": 0.001,
+    "min_freq": 2,
+    "max_vocab": 50000,
+    "validation_fraction": 0.1,
+    "random_state": 42
+  },
+  "train_samples": 143613,
+  "val_samples": 15958,
+  "final_train_loss": 0.04059356312685,
+  "val_loss": 0.0688973253685981,
+  "f1_micro": 0.6792020928711576,
+  "f1_macro": 0.4684888670706652,
+  "per_label_f1": {
+    "toxic": 0.7356572258533043,
+    "severe_toxic": 0.3880597014925373,
+    "obscene": 0.7313019390581718,
+    "threat": 0.13114754098360656,
+    "insult": 0.6540350877192982,
+    "identity_hate": 0.17073170731707318
+  },
+  "per_label": [
+    {
+      "label": "toxic",
+      "precision": 0.8351195383347073,
+      "recall": 0.6573653471771577,
+      "f1": 0.7356572258533043,
+      "roc_auc": 0.9463786240529998
+    },
+    {
+      "label": "severe_toxic",
+      "precision": 0.49523809523809526,
+      "recall": 0.31901840490797545,
+      "f1": 0.3880597014925373,
+      "roc_auc": 0.9692210589279437
+    },
+    {
+      "label": "obscene",
+      "precision": 0.8599348534201955,
+      "recall": 0.636144578313253,
+      "f1": 0.7313019390581718,
+      "roc_auc": 0.9746590938051518
+    },
+    {
+      "label": "threat",
+      "precision": 0.5,
+      "recall": 0.07547169811320754,
+      "f1": 0.13114754098360656,
+      "roc_auc": 0.9346686991749362
+    },
+    {
+      "label": "insult",
+      "precision": 0.7258566978193146,
+      "recall": 0.5951468710089399,
+      "f1": 0.6540350877192982,
+      "roc_auc": 0.967648654164589
+    },
+    {
+      "label": "identity_hate",
+      "precision": 0.6363636363636364,
+      "recall": 0.09859154929577464,
+      "f1": 0.17073170731707318,
+      "roc_auc": 0.9060658844315259
+    }
+  ],
+  "num_parameters": 5122106
+}

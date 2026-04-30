@@ -37,6 +37,18 @@ Course project workspace for the [Kaggle Jigsaw Toxic Comment Classification Cha
    pip install -r requirements.txt
    ```
 
+   **Windows: pip fails on long paths under `.venv\share\jupyter\...`**  
+   The full `jupyter` metapackage installs JupyterLab assets with very long filenames. If `pip install` errors with `OSError: [Errno 2] No such file or directory` and a hint about long paths:
+
+   1. **Recommended:** Enable long paths (Windows 10/11): run **PowerShell as Administrator**, then:
+      ```powershell
+      New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+        -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+      ```
+      Reboot (or sign out), then recreate the venv and `pip install` again.
+   2. **Or** use a **shorter project path** (e.g. `C:\work\cmpe258`) so `.venv\...` stays under the limit.
+   3. **Or** skip the Jupyter metapackage: this repo’s `requirements.txt` is enough for **Cursor / VS Code notebooks** (they use **ipykernel** only). To add the classic Jupyter CLI afterward: enable long paths, then `pip install -r requirements-jupyter.txt`.
+
 3. **Data**: Download the competition files from Kaggle and place these in the `data/` folder:
 
    - `train.csv`
