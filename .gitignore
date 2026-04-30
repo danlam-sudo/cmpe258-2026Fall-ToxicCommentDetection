@@ -24,3 +24,7 @@ outputs/
 models/*.pt
 models/*.pkl
 *.log
+
+# Saved Model Data
+notebooks/02_bilstm_attention/*.pt
+
