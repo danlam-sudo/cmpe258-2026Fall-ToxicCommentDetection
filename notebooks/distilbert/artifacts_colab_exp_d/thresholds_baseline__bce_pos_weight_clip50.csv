@@ -1,0 +1,7 @@
+label,best_threshold,best_f1_on_val,run_id,preprocessing_variant,loss_variant
+toxic,0.93,0.8331688055281342,baseline__bce_pos_weight_clip50,baseline,bce_pos_weight_clip50
+severe_toxic,0.95,0.5190476190476191,baseline__bce_pos_weight_clip50,baseline,bce_pos_weight_clip50
+obscene,0.95,0.8379310344827586,baseline__bce_pos_weight_clip50,baseline,bce_pos_weight_clip50
+threat,0.81,0.5925925925925926,baseline__bce_pos_weight_clip50,baseline,bce_pos_weight_clip50
+insult,0.94,0.7676537585421412,baseline__bce_pos_weight_clip50,baseline,bce_pos_weight_clip50
+identity_hate,0.94,0.5928571428571429,baseline__bce_pos_weight_clip50,baseline,bce_pos_weight_clip50

@@ -1,0 +1,7 @@
+run_id,label,best_threshold,best_f1_on_val
+run_14_lr2.50e-05_wd0.010_warm0.10,toxic,0.38,0.8381389252948886
+run_14_lr2.50e-05_wd0.010_warm0.10,severe_toxic,0.24,0.5494505494505495
+run_14_lr2.50e-05_wd0.010_warm0.10,obscene,0.46,0.8467501490757304
+run_14_lr2.50e-05_wd0.010_warm0.10,threat,0.16,0.5945945945945946
+run_14_lr2.50e-05_wd0.010_warm0.10,insult,0.39,0.7867469879518072
+run_14_lr2.50e-05_wd0.010_warm0.10,identity_hate,0.14,0.6129032258064516

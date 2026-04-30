@@ -1,0 +1,7 @@
+loss_strategy,label,best_threshold,best_f1_on_val
+bce_pos_weight_clip20,toxic,0.86,0.8303430909663204
+bce_pos_weight_clip20,severe_toxic,0.8,0.5333333333333333
+bce_pos_weight_clip20,obscene,0.9,0.8367228355607205
+bce_pos_weight_clip20,threat,0.86,0.5688073394495413
+bce_pos_weight_clip20,insult,0.92,0.7811209439528024
+bce_pos_weight_clip20,identity_hate,0.94,0.6035087719298246

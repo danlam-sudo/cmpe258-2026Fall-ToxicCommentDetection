@@ -1,0 +1,7 @@
+label,tn,fp,fn,tp,run_id
+toxic,13580,849,83,1446,rebalanced__bce_pos_weight_clip20
+severe_toxic,15455,343,12,148,rebalanced__bce_pos_weight_clip20
+obscene,14653,460,41,804,rebalanced__bce_pos_weight_clip20
+threat,15853,57,12,36,rebalanced__bce_pos_weight_clip20
+insult,14587,583,49,739,rebalanced__bce_pos_weight_clip20
+identity_hate,15664,153,26,115,rebalanced__bce_pos_weight_clip20

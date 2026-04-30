@@ -1,0 +1,7 @@
+tn,fp,fn,tp,run_id
+91332,905,600,2911,baseline__bce_no_pos_weight
+91249,988,573,2938,baseline__bce_pos_weight_clip20
+91298,939,618,2893,baseline__bce_pos_weight_clip50
+91373,864,666,2845,rebalanced__bce_no_pos_weight
+91372,865,691,2820,rebalanced__bce_pos_weight_clip20
+91206,1031,611,2900,rebalanced__bce_pos_weight_clip50

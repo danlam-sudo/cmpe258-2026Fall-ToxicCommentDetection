@@ -1,0 +1,7 @@
+loss_strategy,label,tn,fp,fn,tp
+bce_pos_weight_clip20,toxic,14100,329,210,1319
+bce_pos_weight_clip20,severe_toxic,15628,170,40,120
+bce_pos_weight_clip20,obscene,14957,156,125,720
+bce_pos_weight_clip20,threat,15880,30,17,31
+bce_pos_weight_clip20,insult,14925,245,126,662
+bce_pos_weight_clip20,identity_hate,15759,58,55,86
