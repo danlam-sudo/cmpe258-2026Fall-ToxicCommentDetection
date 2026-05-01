@@ -28,4 +28,4 @@ models/*.pkl
 
 # Saved Model Data
 notebooks/02_bilstm_attention/*.pt
-
+notebooks/distilbert/distilbert_exp07_demo_bundle/model.safetensors

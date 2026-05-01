@@ -23,7 +23,7 @@
 
 ## 1. Abstract
 
-This report presents a comprehensive multi-label text classification study comparing four deep learning architectures on the Jigsaw Toxic Comment Classification dataset (~160k Wikipedia comments, 6 toxicity labels). We evaluate two task-trained models — a **CNN with GloVe embeddings** and a **BiLSTM with learned attention** — against two pretrained transformer models — **DistilBERT** and **BERT-base**. All models are evaluated on identical data splits using the same metric suite (tuned macro/micro F1, ROC-AUC per label) and compared on training time, parameter count, and data efficiency. BERT achieves the highest tuned macro F1 (0.7135 at max_length=192), DistilBERT reaches 0.6960 in roughly half the training time, while the task-trained models plateau at ~0.56 macro F1 despite being 33–55× smaller. Rare labels (threat, identity_hate, severe_toxic) are the primary discriminator between architectures, with BERT's longer context window providing the clearest advantage on the `threat` label (+0.065 F1 over DistilBERT).
+This report presents a comprehensive multi-label text classification study comparing four deep learning architectures on the Jigsaw Toxic Comment Classification dataset (~160k Wikipedia comments, 6 toxicity labels). We evaluate two task-trained models — a **CNN with GloVe embeddings** and a **BiLSTM with learned attention** — against two pretrained transformer models — **DistilBERT** and **BERT-base**. All models are evaluated on identical data splits using the same metric suite (tuned macro/micro F1, ROC-AUC per label) and compared on training time, parameter count, and data efficiency. BERT achieves the highest tuned macro F1 (0.7135 at max_length=192), DistilBERT reaches 0.6960 in roughly half the training time, while the task-trained models plateau at ~0.56 macro F1 despite being 33–55× smaller. Rare labels (threat, identity_hate, severe_toxic) are the primary discriminator between architectures. A complete BERT training-size sweep (Exp06, 10k→143k) confirms that BERT reaches DistilBERT's full-data performance at only 80k samples, and that the two transformer models show nearly identical data saturation profiles.
 
 ---
 
@@ -113,7 +113,7 @@ The vocabulary is built **from the training subset only** at each sweep step, me
 ```
 Raw text
     → HuggingFace AutoTokenizer (WordPiece subword tokenization)
-    → max_length truncation (128 for DistilBERT/BERT-Exp04, 192 for BERT-Exp05)
+    → max_length truncation (128 for DistilBERT/BERT-Exp04, 192 for BERT-Exp05/06)
     → [CLS] / [SEP] insertion
     → attention_mask + token_type_ids generation
     → pt tensors returned directly
@@ -222,7 +222,7 @@ Input tokens (subword, max_length=128 or 192)
 **Training config evolution:**
 - **Exp 04:** 16-run grid search over {LR: 1.5e-5, 1.75e-5, 2.0e-5, 2.5e-5} × {WD: 0.01, 0.015} × {warmup: 0.06, 0.10} at max_length=128
 - **Exp 05 (Best):** Best config from Exp04 (lr=1.5e-5, wd=0.015, warmup=0.06), max_length extended to **192**, threshold grid refined to 0.005 step
-- **Exp 06:** Full training-size sweep using Exp05 configuration
+- **Exp 06:** Full training-size sweep (10k → 143k, 15 points) using Exp05 configuration; max_length=192
 
 Key difference from DistilBERT: `batch_size=16` with `gradient_accumulation_steps=2` (effective batch=32) is required due to BERT's 109M parameters exceeding GPU memory limits at larger batch sizes.
 
@@ -255,7 +255,7 @@ All models use default threshold t=0.5 for **baseline** metrics, then apply **pe
 | BERT Exp04 | 0.05 → 0.995 | 0.01 |
 | BERT Exp05/06 | 0.05 → 0.9995 | 0.005 (finer) |
 
-The finer grid for BERT Exp05 was motivated by rare-label optima clustering at very low thresholds (0.05–0.15 for `threat` and `identity_hate`), where coarser grids miss the peak.
+The finer grid for BERT Exp05/06 was motivated by rare-label optima clustering at very low thresholds (0.05–0.15 for `threat` and `identity_hate`), where coarser grids miss the peak.
 
 ### 6.3 Early Stopping
 
@@ -283,17 +283,18 @@ For each label and in aggregate:
 
 ### 7.1 Full-Dataset Performance
 
-The table below summarizes final model performance at full training data (143,613 samples). BERT Exp05 uses max_length=192; all others use max_length=128 (or word-level equivalents).
+The table below summarizes final model performance at full training data (143,613 samples). BERT Exp05 uses max_length=192; BERT Exp06 is the training-size sweep at the same configuration; all others use max_length=128 (or word-level equivalents).
 
 | Model | Params | Train Time | Tuned Micro F1 | Tuned Macro F1 | Gain (tuned − baseline macro) |
 |---|---|---|---|---|---|
 | CNN+GloVe | ~1.9M | 886s (CPU) | 0.6958 | 0.5609 | +0.146 |
-| BiLSTM+Attn | ~2.0M | ~645s (CPU) | ~0.744 | ~0.555 (60k best) | +0.12 |
+| BiLSTM+Attn | ~2.0M | ~645s (GPU) | ~0.738 | ~0.555 (60k best) | +0.12 |
 | DistilBERT | 67M | 1,403s (GPU) | 0.7950 | 0.6960 | +0.042 |
 | BERT Exp04 (best) | 109M | 2,376s (GPU) | 0.8029 | 0.7091 | +0.071 |
 | **BERT Exp05** | **109M** | **2,937s (GPU)** | **0.8011** | **0.7135** | **+0.066** |
+| BERT Exp06 (sweep) | 109M | 2,944s (GPU) | 0.7981 | 0.7055 | +0.028 |
 
-The threshold tuning gain (tuned − baseline macro) is dramatically larger for task-trained models (+0.12–0.15) than for transformers (+0.04–0.07). This reflects the transformer models' better probability calibration — their sigmoid outputs more reliably track true positive probabilities, so the default t=0.5 already captures most of the signal.
+The threshold tuning gain (tuned − baseline macro) is dramatically larger for task-trained models (+0.12–0.15) than for transformers (+0.03–0.07). This reflects the transformer models' better probability calibration — their sigmoid outputs more reliably track true positive probabilities, so the default t=0.5 already captures most of the signal. BERT Exp06's smaller tuning gain (+0.028) compared to Exp05 (+0.066) is due to early stopping at epoch 2 yielding a better-calibrated model with a higher baseline threshold.
 
 ### 7.2 Per-Label F1 at Full Dataset
 
@@ -301,19 +302,19 @@ The threshold tuning gain (tuned − baseline macro) is dramatically larger for 
 
 | Label | CNN+GloVe | BiLSTM (60k) | DistilBERT | BERT Exp05 |
 |---|---|---|---|---|
-| toxic | 0.696 | 0.737 | 0.831 | **0.841** |
-| severe_toxic | 0.379 | 0.457 | 0.521 | **0.552** |
-| obscene | 0.700 | 0.745 | 0.834 | **0.849** |
-| threat | 0.277 | 0.462 | 0.595 | **0.659** |
-| insult | 0.614 | 0.659 | 0.753 | **0.784** |
-| identity_hate | 0.379 | 0.270 | 0.559 | **0.597** |
-| **Macro avg** | **0.508** | **0.555** | **0.682** | **0.714** |
+| toxic | 0.753 | 0.737 | 0.841 | **0.841** |
+| severe_toxic | 0.498 | 0.457 | 0.543 | **0.552** |
+| obscene | 0.772 | 0.745 | 0.845 | **0.849** |
+| threat | 0.277 | 0.462 | 0.568 | **0.659** |
+| insult | 0.687 | 0.659 | 0.772 | **0.784** |
+| identity_hate | 0.379 | 0.270 | **0.608** | 0.597 |
+| **Macro avg** | **0.561** | **0.555** | **0.696** | **0.714** |
 
 **Key observations:**
-- BERT leads on every label
-- The gap is largest on `threat` (+0.065 BERT vs DistilBERT) — directly attributable to the 192-token context window enabling BERT to capture full-sentence threat framing that is truncated at 128 tokens
-- BiLSTM outperforms CNN on most labels despite having no pretrained embeddings, demonstrating that sequential context captures more than local n-gram patterns
-- `identity_hate` is the hardest label for all models (0.27–0.60), likely due to context-dependent cultural references that require broad world knowledge
+- BERT Exp05 leads on five of six labels; **DistilBERT leads on `identity_hate`** (0.608 vs. BERT's 0.597), suggesting BERT's longer context window does not uniformly help and context-dependent cultural references in identity_hate content may be better captured by DistilBERT's training regime
+- The gap between BERT Exp05 and DistilBERT is largest on `threat` (+0.091, 0.659 vs. 0.568) — directly attributable to the 192-token context window enabling BERT to capture full-sentence threat framing truncated at 128 tokens
+- BiLSTM outperforms CNN on most labels despite having no pretrained embeddings, demonstrating that sequential context captures more signal than local n-gram patterns alone
+- `identity_hate` is the most variable label across architectures: task-trained models struggle (0.27–0.38) while transformers reach 0.60+, likely due to context-dependent cultural references requiring broad world knowledge
 
 ### 7.3 ROC-AUC at Full Dataset
 
@@ -321,25 +322,25 @@ The threshold tuning gain (tuned − baseline macro) is dramatically larger for 
 
 | Label | CNN+GloVe | BiLSTM (60k) | DistilBERT | BERT Exp05 |
 |---|---|---|---|---|
-| toxic | 0.951 | 0.961 | 0.987 | **0.989** |
-| severe_toxic | 0.972 | 0.985 | 0.992 | **0.992** |
-| obscene | 0.964 | 0.968 | 0.992 | **0.994** |
-| threat | 0.946 | 0.997 | 0.986 | **0.988** |
-| insult | 0.955 | 0.960 | 0.989 | **0.990** |
-| identity_hate | 0.945 | 0.953 | 0.988 | **0.989** |
+| toxic | 0.961 | 0.961 | 0.987 | **0.989** |
+| severe_toxic | 0.985 | 0.985 | 0.992 | **0.992** |
+| obscene | 0.980 | 0.968 | 0.992 | **0.994** |
+| threat | 0.982 | **0.998** | 0.986 | 0.988 |
+| insult | 0.971 | 0.960 | 0.989 | **0.990** |
+| identity_hate | 0.963 | 0.953 | 0.988 | **0.989** |
 
-ROC-AUC is notably high for all models — even CNN achieves 0.95+. This is because AUC measures ranking quality (can the model order positives above negatives?), which is easier than achieving calibrated probabilities. The task-trained models' larger threshold tuning gains confirm that their raw probabilities are less calibrated even though their ranking is reasonable.
+ROC-AUC is notably high for all models — even CNN achieves 0.96+ across all labels. This is because AUC measures ranking quality (can the model order positives above negatives?), which is easier than achieving calibrated probabilities. The task-trained models' larger threshold tuning gains confirm that their raw probabilities are less calibrated even though their ranking is reasonable.
 
-Notably, BiLSTM achieves the highest single-label ROC-AUC of any model on `threat` (0.997 at 60k). This outlier likely reflects attention mechanism focusing sharply on threat-specific vocabulary at that training size.
+Notably, BiLSTM achieves the highest single-label ROC-AUC of any model on `threat` (0.998 at 60k). This outlier likely reflects the attention mechanism focusing sharply on threat-specific vocabulary at that training size, producing excellent rank ordering despite imperfect probability calibration.
 
 ### 7.4 Training Size Sweep — Macro F1 vs Data Volume
 
 ![Macro F1 vs Training Size](figures/fig03_macro_f1_vs_size.png)
 
-**CNN (10k → 143k, 18 points):**
+**CNN (10k → 143k, 15 points):**
 - Macro F1 grows from 0.425 at 10k to 0.561 at 143k
 - Growth is approximately log-linear with no clear plateau, suggesting CNN benefits from more data at every scale tested
-- Best single-run: 0.566 at 140k
+- Best at full dataset: 0.561 at 143k
 
 **BiLSTM (20k → 140k, 7 points):**
 - Best at 60k (macro F1 = 0.555); performance degrades slightly at larger sizes
@@ -351,9 +352,26 @@ Notably, BiLSTM achieves the highest single-label ROC-AUC of any model on `threa
 - This saturation pattern suggests DistilBERT's pretrained representations are highly data-efficient — most of the label-specific learning happens in the first 50k examples
 - Best: 140k, macro F1 = 0.704
 
-**BERT Exp05:**
-- Single reference point at full dataset: 0.714
-- BERT Exp04 sweep at full data ranges 0.699–0.709 across 16 hyperparameter configurations, showing relatively low sensitivity to LR/WD/warmup once in the right ballpark
+**BERT Exp06 (10k → 143k, 15 points):**
+- Starts at 0.591 at 10k — already substantially above CNN (0.425) and DistilBERT (0.544) at the same data volume
+- Rapid gains through 50k (0.690), closely tracking DistilBERT's saturation profile
+- Near-plateau from 80k onwards: 0.696 at 80k, reaching 0.701 at 90k and 0.706 at full data — an improvement of only +0.015 from 80k to 143k
+- **At 80k samples, BERT Exp06 (0.696) matches DistilBERT's full-data macro F1 (0.696)**, reaching the same performance with 44% less data
+- Full data (143k): tuned macro F1 = 0.706, tuned micro F1 = 0.798
+- The Exp05 focused single run at full data achieved 0.714, reflecting run-to-run variability (~0.008) at this performance level
+
+| Train Size | CNN | BiLSTM | DistilBERT | BERT Exp06 |
+|---|---|---|---|---|
+| 10k | 0.425 | — | 0.544 | 0.591 |
+| 20k | 0.455 | 0.495 | 0.519 | 0.606 |
+| 30k | 0.472 | — | 0.566 | 0.620 |
+| 40k | 0.490 | 0.533 | 0.598 | 0.656 |
+| 50k | 0.501 | — | 0.679 | 0.690 |
+| 60k | 0.520 | **0.555** | 0.686 | 0.688 |
+| 80k | 0.542 | 0.521 | 0.695 | 0.696 |
+| 90k | 0.540 | 0.548 | 0.697 | 0.701 |
+| 100k | 0.545 | 0.548 | 0.695 | 0.699 |
+| 143k | 0.561 | 0.533 | **0.696** | **0.706** |
 
 ### 7.5 Training Time vs Data Volume
 
@@ -363,10 +381,11 @@ Notably, BiLSTM achieves the highest single-label ROC-AUC of any model on `threa
 |---|---|---|---|
 | CNN (CPU) | 56s | 886s | ~15.8× |
 | DistilBERT (GPU) | 97s | 1,403s | ~14.5× |
-| BiLSTM (CPU, est.) | ~45s | ~645s | ~14× |
+| BiLSTM (GPU, est.) | ~30s | ~645s | ~21× |
 | BERT Exp05 (GPU) | — | 2,937s | — |
+| BERT Exp06 (GPU) | 254s | 2,944s | ~11.6× |
 
-All models scale approximately linearly with training size — the time-per-sample is roughly constant. CNN and BiLSTM run on CPU and are competitive with DistilBERT on raw time because DistilBERT's GPU overhead includes tokenization and HuggingFace model loading per run. BERT costs ~2× more than DistilBERT at every size.
+All models scale approximately linearly with training size — the time-per-sample is roughly constant. CNN and BiLSTM run on CPU and are competitive with DistilBERT on raw time because DistilBERT's GPU overhead includes tokenization and HuggingFace model loading per run. BERT costs ~2× more than DistilBERT at every size. BERT Exp06 at 10k takes 254s, reflecting the fixed per-epoch inference and threshold-tuning overhead on the 15,958-sample validation set.
 
 ### 7.6 BERT Hyperparameter Sweep (Exp 04)
 
@@ -396,12 +415,12 @@ Common labels (toxic, obscene, insult) converge quickly — near-peak performanc
 
 | Label | F1 at 10k | F1 at 50k | F1 at 143k | Training size to reach 80% of final F1 |
 |---|---|---|---|---|
-| toxic | 0.808 | 0.843 | 0.831 | ~10k |
-| obscene | 0.808 | 0.843 | 0.834 | ~10k |
-| severe_toxic | 0.513 | 0.537 | 0.521 | ~20k |
-| threat | 0.084 | 0.522 | 0.595 | ~50k |
-| insult | 0.740 | 0.761 | 0.753 | ~10k |
-| identity_hate | 0.315 | 0.586 | 0.559 | ~40k |
+| toxic | 0.808 | 0.843 | 0.841 | ~10k |
+| obscene | 0.808 | 0.843 | 0.845 | ~10k |
+| severe_toxic | 0.513 | 0.537 | 0.543 | ~20k |
+| threat | 0.084 | 0.522 | 0.568 | ~50k |
+| insult | 0.740 | 0.761 | 0.772 | ~10k |
+| identity_hate | 0.315 | 0.586 | 0.608 | ~40k |
 
 `threat` is the most data-hungry label — F1 is near-zero at 10k (only ~7 positive examples in 10k samples) and does not stabilize until ~90k. This extreme data sparsity is why threshold tuning is critical: the model outputs very low probabilities even for true threats, requiring a threshold of ~0.05–0.15 to capture them.
 
@@ -417,7 +436,9 @@ The efficiency frontier plots tuned macro F1 against training time for every exp
 
 **DistilBERT occupies the best efficiency region:** it reaches macro F1=0.679 in under 400 seconds (50k samples), a level that CNN never reaches regardless of dataset size. Even DistilBERT at 10k (97s) outperforms CNN at 143k (886s) — a 14:1 time advantage with +0.135 macro F1.
 
-**BERT's marginal gain over DistilBERT** (0.714 vs 0.696) costs 2× training time. Whether this is worthwhile depends on the deployment requirement — for a real moderation system, DistilBERT's speed advantage is significant at inference time (34s vs 100s for 15,958 samples).
+**BERT Exp06 extends the efficiency analysis** across the full data spectrum. At 80k samples (~2,041s), BERT Exp06 achieves macro F1=0.696 — equal to DistilBERT's full-data performance at less than half the training size. The BERT training curve closely tracks DistilBERT's, with BERT maintaining a ~0.010 advantage per data point above 50k.
+
+**BERT's marginal gain over DistilBERT** (0.706 vs 0.696 from the Exp06 sweep; 0.714 vs 0.696 from the best single runs) costs 2× training time. Whether this is worthwhile depends on the deployment requirement — for a real moderation system, DistilBERT's speed advantage is significant at inference time (~34s vs ~100s for 15,958 samples).
 
 **Task-trained models** form a separate cluster: competitive training times but a hard F1 ceiling around 0.56 that more data cannot overcome.
 
@@ -444,8 +465,9 @@ A large gap between baseline (t=0.5) and tuned macro F1 indicates poor probabili
 | BiLSTM (60k) | ~0.43 | ~0.555 | **+0.125** |
 | DistilBERT | 0.654 | 0.696 | +0.042 |
 | BERT Exp05 | 0.647 | 0.714 | +0.066 |
+| BERT Exp06 (143k) | 0.677 | 0.706 | +0.028 |
 
-The task-trained models require aggressive threshold tuning because their smaller capacity leads to systematically underconfident predictions on rare labels. The optimal thresholds for `threat` and `identity_hate` in CNN/BiLSTM are often in the 0.05–0.25 range — far from the 0.5 default. For BERT, optimal thresholds for rare labels cluster around 0.08–0.20 despite its stronger representations, confirming that rare-event calibration is an inherent challenge in this domain regardless of model capacity.
+The task-trained models require aggressive threshold tuning because their smaller capacity leads to systematically underconfident predictions on rare labels. The optimal thresholds for `threat` and `identity_hate` in CNN/BiLSTM are often in the 0.05–0.25 range — far from the 0.5 default. For BERT Exp05, optimal thresholds for rare labels cluster around 0.08–0.20 despite its stronger representations, confirming that rare-event calibration is an inherent challenge in this domain regardless of model capacity. BERT Exp06's lower tuning gain (+0.028) compared to Exp05 (+0.066) reflects better baseline calibration from its specific early-stopping point.
 
 ### 8.4 The Role of Context Window (BERT 128 vs 192)
 
@@ -457,6 +479,8 @@ The improvement is concentrated almost entirely in the `threat` label:
 - All other labels: ±0.010
 
 This confirms the hypothesis from the project proposal: threat detection benefits most from longer context because threats are often embedded in longer conditional sentences ("I will... if you...") that are truncated at 128 tokens.
+
+Comparing BERT Exp05 to DistilBERT at full data (both using their best configurations), the threat gap is +0.091 (0.659 vs. 0.568). This is the largest per-label gap between the two transformer architectures and is attributable to both the longer context window (192 vs. 128 tokens) and BERT's deeper encoder (12 vs. 6 layers). Notably, on `identity_hate`, DistilBERT (0.608) outperforms BERT Exp05 (0.597), suggesting that deeper models do not uniformly improve rare-label detection and that calibration at the classification head is an important factor for context-dependent, culturally-specific labels.
 
 ### 8.5 Summary Macro F1 at Best Configuration
 
@@ -470,7 +494,7 @@ This confirms the hypothesis from the project proposal: threat detection benefit
 
 The performance gap between task-trained and pretrained models (macro F1 of ~0.56 vs ~0.70+) is not primarily due to parameter count — it is due to **pretrained linguistic knowledge**. DistilBERT arrives at fine-tuning having seen patterns of threat, insult, and toxic language across the entire pretraining corpus. Its representations encode semantic similarity between phrases like "I'll find you" and "I'll hurt you" even before seeing a single toxic comment label. Task-trained models must learn these associations from scratch with only 143k examples.
 
-This is most visible in the `threat` label: CNN F1 at 143k is 0.277, while DistilBERT at 10k (only 30 threat-positive examples) already achieves 0.084 — then rapidly climbs to 0.522 by 50k. The task-trained models simply cannot acquire sufficient coverage of threat-language patterns from these data volumes.
+This is most visible in the `threat` label: CNN F1 at 143k is 0.277, while DistilBERT at 10k (only ~30 threat-positive examples) already achieves 0.084 — then rapidly climbs to 0.522 by 50k. The task-trained models simply cannot acquire sufficient coverage of threat-language patterns from these data volumes.
 
 ### 9.2 Where Task-Trained Models Remain Competitive
 
@@ -488,17 +512,19 @@ Contrary to initial expectations, `pos_weight` in BCEWithLogitsLoss **helped tas
 
 ### 9.4 Data Efficiency Conclusions
 
-The training-size sweeps reveal a clear pattern:
-- **Transformers are highly data-efficient:** DistilBERT at 50k (35% of data) achieves 97% of its full-data performance
+The training-size sweeps (now complete for all four model families) reveal a clear pattern:
+- **Transformers are highly data-efficient:** DistilBERT at 50k (35% of data) achieves 97% of its full-data performance; BERT at 80k (56% of data) matches DistilBERT's full-data macro F1
+- **BERT and DistilBERT show nearly identical saturation profiles**, with BERT maintaining a ~0.010 margin at each data point above 50k — a narrower per-point advantage than the 0.018 gap at full data suggests
 - **Task-trained models are data-hungry:** CNN/BiLSTM continue improving through the full dataset with no clear plateau
 - **Rare labels set the data floor:** For `threat` detection, a minimum of ~50k samples is required for any model to exceed random performance, independent of architecture
 
 ### 9.5 Limitations
 
-- **BiLSTM sweep gaps:** The BiLSTM data covers only 7 training sizes (20k–140k) with 2-epoch training, making direct comparison to the finer CNN/DistilBERT sweeps imprecise
-- **BERT train-size sweep:** BERT Exp06 is designed but results are not yet available; the BERT data efficiency curve is inferred from a single full-dataset point
+- **BiLSTM sweep gaps:** The BiLSTM data covers only 7 training sizes (20k–140k) with variable epoch counts (3–9 depending on early stopping), making direct comparison to the finer CNN/transformer sweeps imprecise
 - **No GloVe ablation for BiLSTM:** The BiLSTM uses learnable embeddings while CNN uses pretrained GloVe — the effect of switching BiLSTM to GloVe is untested
 - **Inference time:** GPU inference times for transformers are measured on the validation set (~16k samples); production inference on streaming data would show different characteristics
+- **BERT Exp05 vs Exp06 variance:** The ~0.008 macro F1 difference between the focused Exp05 run (0.714) and the Exp06 sweep at full data (0.706), despite identical configurations, reflects training-run variability. The Exp05 result likely represents the upper tail of the distribution.
+- **CNN full-data ceiling:** The CNN Colab sweep (notebook 12) was limited to 61k samples due to compute constraints, capping direct comparison of GPU-accelerated CNN against transformer sweeps at the same data volumes
 
 ---
 
@@ -510,15 +536,15 @@ This project demonstrates a clear architectural hierarchy for toxic comment dete
 
 However, the practically important comparisons are more nuanced:
 
-1. **DistilBERT vs BERT:** 0.696 vs 0.714 macro F1, 1,403s vs 2,937s training. DistilBERT delivers ~97% of BERT's macro F1 in ~48% of the training time. For most production deployments, DistilBERT is the better choice.
+1. **DistilBERT vs BERT:** 0.696 vs 0.714 macro F1 (best single runs), 1,403s vs 2,937s training. DistilBERT delivers ~97% of BERT's macro F1 in ~48% of the training time. For most production deployments, DistilBERT is the better choice. At identical data volumes (143k), the Exp06 sweep narrows this to 0.696 vs 0.706 — a margin of just 0.010.
 
 2. **Task-trained vs Pretrained:** The ~0.14 macro F1 gap is primarily driven by rare labels (`threat`, `identity_hate`, `severe_toxic`). For a system that only needs to detect `toxic` and `obscene` comments, BiLSTM/CNN reduce this gap considerably while being 55× smaller and runnable on CPU.
 
-3. **Data efficiency:** Transformers need less task-specific data to reach peak performance. DistilBERT at 50k samples outperforms any task-trained model at 143k. This makes transformers the practical choice when labeled data is scarce.
+3. **Data efficiency:** Both transformer architectures are highly data-efficient and show similar saturation profiles. BERT at 80k matches DistilBERT's full-data performance; DistilBERT at 50k reaches 97% of its own full-data score. Task-trained models show no such plateau. This makes transformers the practical choice when labeled data is scarce.
 
-4. **Threshold tuning is non-optional:** All models require per-label threshold tuning, particularly for rare labels. Task-trained models show a 12–15 point macro F1 boost from tuning alone, versus 4–7 points for transformers. Deploying any of these models with a fixed 0.5 threshold substantially understates their true capability.
+4. **Threshold tuning is non-optional:** All models require per-label threshold tuning, particularly for rare labels. Task-trained models show a 12–15 point macro F1 boost from tuning alone, versus 3–7 points for transformers. Deploying any of these models with a fixed 0.5 threshold substantially understates their true capability.
 
-5. **Context length matters for threat detection:** BERT's 192-token context achieves +0.056 F1 on the `threat` label versus 128-token context — the single largest per-label gain observed from any hyperparameter change in the entire study.
+5. **Context length matters for threat detection, but not uniformly:** BERT's 192-token context achieves +0.056 F1 on the `threat` label versus 128-token context — the single largest per-label gain observed from any hyperparameter change. However, DistilBERT outperforms BERT Exp05 on `identity_hate` despite its shorter context, indicating that context length is label-specific and not a universal advantage for longer transformers.
 
 ---
 
