@@ -1,0 +1,2 @@
+train_size,train_fraction,max_train_samples,tn,fp,fn,tp
+20000,0.13926315862770083,20000,91236,1001,730,2781

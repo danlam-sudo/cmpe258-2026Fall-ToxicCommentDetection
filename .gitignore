@@ -18,9 +18,14 @@ env/
 
 # Project data (large; download from Kaggle — see README)
 data/*.csv
+data/glove.6B.100d.txt
 
 # Local outputs
 outputs/
 models/*.pt
 models/*.pkl
 *.log
+
+# Saved Model Data
+notebooks/02_bilstm_attention/*.pt
+

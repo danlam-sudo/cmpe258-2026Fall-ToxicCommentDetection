@@ -1,0 +1,7 @@
+label,best_threshold,best_f1_on_val
+toxic,0.445,0.840648
+severe_toxic,0.29,0.551724
+obscene,0.545,0.848704
+threat,0.295,0.659341
+insult,0.27,0.783753
+identity_hate,0.145,0.596923

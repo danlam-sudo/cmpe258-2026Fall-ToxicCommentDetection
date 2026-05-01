@@ -1,0 +1,7 @@
+loss_strategy,label,best_threshold,best_f1_on_val
+focal_gamma1,toxic,0.47,0.8336100963135171
+focal_gamma1,severe_toxic,0.35,0.5314685314685315
+focal_gamma1,obscene,0.57,0.8436363636363636
+focal_gamma1,threat,0.38,0.5909090909090909
+focal_gamma1,insult,0.44,0.7801857585139319
+focal_gamma1,identity_hate,0.25,0.5768194070080862

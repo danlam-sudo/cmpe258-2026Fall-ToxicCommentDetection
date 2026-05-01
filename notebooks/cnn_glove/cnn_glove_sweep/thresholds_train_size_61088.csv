@@ -1,0 +1,7 @@
+train_size,train_fraction,max_train_samples,label,best_threshold,best_f1_on_val
+61088,1.0,61088,toxic,0.85,0.741958
+61088,1.0,61088,severe_toxic,0.89,0.448637
+61088,1.0,61088,obscene,0.83,0.760391
+61088,1.0,61088,threat,0.97,0.422222
+61088,1.0,61088,insult,0.77,0.6925
+61088,1.0,61088,identity_hate,0.95,0.387755

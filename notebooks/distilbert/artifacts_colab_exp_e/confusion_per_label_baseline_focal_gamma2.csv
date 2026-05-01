@@ -1,0 +1,7 @@
+loss_strategy,label,tn,fp,fn,tp
+focal_gamma2,toxic,14221,208,306,1223
+focal_gamma2,severe_toxic,15724,74,90,70
+focal_gamma2,obscene,14987,126,153,692
+focal_gamma2,threat,15901,9,27,21
+focal_gamma2,insult,14989,181,202,586
+focal_gamma2,identity_hate,15770,47,70,71

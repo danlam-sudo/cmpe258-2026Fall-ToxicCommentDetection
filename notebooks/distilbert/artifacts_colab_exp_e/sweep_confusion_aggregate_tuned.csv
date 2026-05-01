@@ -1,0 +1,6 @@
+loss_strategy,tn,fp,fn,tp
+bce_no_pos_weight,91332,905,600,2911
+bce_pos_weight_clip20,91249,988,573,2938
+focal_gamma1,91410,827,683,2828
+focal_gamma2,91299,938,658,2853
+focal_gamma3,91387,850,632,2879

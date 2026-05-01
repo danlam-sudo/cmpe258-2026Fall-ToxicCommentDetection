@@ -1,0 +1,7 @@
+run_id,label,tn,fp,fn,tp
+run_14_lr2.50e-05_wd0.010_warm0.10,toxic,14185,244,250,1279
+run_14_lr2.50e-05_wd0.010_warm0.10,severe_toxic,15694,104,60,100
+run_14_lr2.50e-05_wd0.010_warm0.10,obscene,14991,122,135,710
+run_14_lr2.50e-05_wd0.010_warm0.10,threat,15880,30,15,33
+run_14_lr2.50e-05_wd0.010_warm0.10,insult,14951,219,135,653
+run_14_lr2.50e-05_wd0.010_warm0.10,identity_hate,15743,74,46,95
