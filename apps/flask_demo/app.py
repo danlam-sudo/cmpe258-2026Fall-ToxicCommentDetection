@@ -6,6 +6,8 @@ import torch
 from flask import Flask, render_template, request
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+HF_REPO_ID = os.environ.get("HF_REPO_ID", "danlamgcm/jigsaw-toxic-distilbert")
+
 
 def resolve_bundle_dir() -> Path:
     default_dir = (
@@ -32,6 +34,12 @@ def validate_bundle_dir(bundle_dir: Path) -> None:
 
 
 def load_bundle(bundle_dir: Path):
+    # Fall back to downloading from HuggingFace Hub if local bundle is missing
+    if not bundle_dir.exists() or not (bundle_dir / "model.safetensors").exists():
+        from huggingface_hub import snapshot_download
+        print(f"Local bundle not found — downloading from {HF_REPO_ID} ...")
+        downloaded = snapshot_download(repo_id=HF_REPO_ID)
+        bundle_dir = Path(downloaded)
     validate_bundle_dir(bundle_dir)
     tokenizer = AutoTokenizer.from_pretrained(str(bundle_dir), local_files_only=True)
     model = AutoModelForSequenceClassification.from_pretrained(

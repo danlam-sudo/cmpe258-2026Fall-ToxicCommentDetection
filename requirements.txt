@@ -13,4 +13,5 @@ iterative-stratification>=0.1.9
 # Model notebooks (01–04 under notebooks/)
 torch>=2.2.0
 transformers>=4.40.0
+huggingface_hub>=0.23.0
 flask>=3.0.0
